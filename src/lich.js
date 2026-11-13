@@ -51,7 +51,7 @@ function readBlock(grid, start) {
       dd: COL.dd.map((c) => cell(r, c).toUpperCase()),
     });
   }
-  return { title, tasks, startRow: start + 1 };
+  return { title, tasks, startRow: start + 1, endRow: tasks.length ? tasks[tasks.length - 1].row : start + 2 };
 }
 
 // Ngày bắt đầu tuần từ tiêu đề: "27 - 03/08" -> 27/07, "31/8 - 7/09" -> 31/08, "5/10 - 12/10" -> 05/10
@@ -94,7 +94,17 @@ export function weekFor(grid, vnDay) {
     if (start - day > 180 * 864e5) start = Date.UTC(y - 1, st.m - 1, st.d); // tuần cuối năm trước
     if (start <= day && day < start + 7 * 864e5) pick = w;
   }
-  return pick || weeks[weeks.length - 1];
+  if (pick) return pick;
+  // Không bảng nào có ngày khớp: lấy bảng cuối cùng (theo thứ tự trong tab) chưa ghi ngày hoặc bắt đầu trước ngày đó.
+  // (vd tối Chủ nhật đã tạo sẵn bảng tuần sau có ngày, còn bảng tuần này chưa ghi ngày -> vẫn dùng bảng tuần này)
+  for (let i = weeks.length - 1; i >= 0; i--) {
+    const st = titleStart(weeks[i].title);
+    if (!st) return weeks[i];
+    let start = Date.UTC(y, st.m - 1, st.d);
+    if (start - day > 180 * 864e5) start = Date.UTC(y - 1, st.m - 1, st.d);
+    if (start <= day) return weeks[i];
+  }
+  return weeks[weeks.length - 1];
 }
 
 // Việc hôm nay + lần điểm danh tương ứng
