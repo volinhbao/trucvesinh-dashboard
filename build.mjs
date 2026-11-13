@@ -9,11 +9,24 @@ import { fetchCsvText, normDate } from "./src/sheet.js";
 const env = process.env;
 const LICH_GID = env.LICH_GID || "1007624391";
 const TICK_GID = env.TICK_GID || "1051999456";
+const PENALTY_FROM = env.PENALTY_FROM || "14/11/2026";
+const PENALTY_EVERY = 3;
 
 const lichCsv = env.LICH_CSV ? fs.readFileSync(env.LICH_CSV, "utf8") : await fetchCsvText(env.SHEET_ID, LICH_GID);
 let tickCsv = "";
 try { tickCsv = env.TICK_CSV ? fs.readFileSync(env.TICK_CSV, "utf8") : await fetchCsvText(env.SHEET_ID, TICK_GID); }
 catch (e) { console.warn("⚠️ Không đọc được tab Tick vệ sinh:", e.message); }
+
+// Tab "Phạt trà sữa" (số lần đã bao) — đọc theo tên tab, chưa có tab thì coi như chưa ai bao
+let paidCsv = "";
+try {
+  if (env.PAID_CSV) paidCsv = fs.readFileSync(env.PAID_CSV, "utf8");
+  else {
+    const r = await fetch(`https://docs.google.com/spreadsheets/d/${env.SHEET_ID}/gviz/tq?tqx=out:csv&headers=1&sheet=${encodeURIComponent("Phạt trà sữa")}`);
+    const t = await r.text();
+    if (r.ok && !t.trimStart().startsWith("<")) paidCsv = t;
+  }
+} catch (e) { console.warn("⚠️ Không đọc được tab Phạt trà sữa:", e.message); }
 
 // "Hôm nay" theo giờ VN (cho phép giả lập bằng NOW=2026-11-13)
 const nowMs = env.NOW ? Date.parse(env.NOW + "T12:00:00+07:00") : Date.now();
@@ -66,6 +79,10 @@ const weekly = weeklyTasks(week).map((x) => ({ task: x.task, who: people(x.who),
 
 // Tab Tick vệ sinh: hàng 1 = ngày, cột A = tên, ô TRUE = bị tick (chưa trực)
 const ticks = { people: [], dates: [], month: key(today).slice(3), monthCounts: [], recent: { dates: [], rows: [] } };
+const penalty = { from: PENALTY_FROM, every: PENALTY_EVERY, people: [] };
+const normName = (s) => String(s || "").normalize("NFD").replace(/[\u0300-\u036f]/g, "").replace(/đ/gi, "d").toLowerCase().replace(/[^a-z0-9]/g, "");
+const paidBy = new Map();
+if (paidCsv) for (const r of parse(paidCsv, { relax_column_count: true, bom: true }).slice(1)) if (String(r[0] || "").trim()) paidBy.set(normName(r[0]), Number(r[1]) || 0);
 if (tickCsv) {
   const rows = parse(tickCsv, { relax_column_count: true, bom: true });
   const header = rows[0] || [];
@@ -77,8 +94,11 @@ if (tickCsv) {
   for (const r of body) {
     const name = String(r[0]).trim();
     const isT = (i) => String(r[i] || "").trim().toUpperCase() === "TRUE";
-    let month = 0, total = 0;
-    dates.forEach((k, i) => { if (!k || !isT(i)) return; total++; if (k.slice(3) === ticks.month) month++; });
+    let month = 0, total = 0, since = 0;
+    const fromT = toUTC(PENALTY_FROM);
+    dates.forEach((k, i) => { if (!k || !isT(i)) return; total++; if (k.slice(3) === ticks.month) month++; if (toUTC(k) >= fromT) since++; });
+    const paid = paidBy.get(normName(name)) || 0;
+    penalty.people.push({ name, ticks: since, paid, owed: Math.max(0, Math.floor(since / PENALTY_EVERY) - paid), progress: since % PENALTY_EVERY });
     ticks.people.push(name);
     ticks.monthCounts.push({ name, month, total });
     ticks.recent.rows.push({ name, cells: recentIdx.map((i) => isT(i)) });
@@ -97,6 +117,7 @@ const data = {
   todayTasks,
   weekly,
   ticks,
+  penalty,
   kpi: {
     todayDone: todayTasks.filter((t) => t.s === "done").length,
     todayTotal: todayTasks.length,

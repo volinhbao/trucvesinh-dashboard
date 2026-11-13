@@ -102,6 +102,13 @@
   table.heat thead th { padding: 0 0 4px; height: 16px; position: relative; width: 16px; }
   table.heat thead th span { position: absolute; left: 0; bottom: 4px; font-size: 10px; color: var(--muted); font-weight: 400; white-space: nowrap; }
   .empty { color: var(--muted); font-size: 13px; }
+  .pen { display: grid; grid-template-columns: repeat(auto-fill, minmax(170px, 1fr)); gap: 8px; }
+  .pen .p { border: 1px solid var(--ring); border-radius: 10px; padding: 10px 12px; display: flex; justify-content: space-between; align-items: center; gap: 8px; }
+  .pen .p.owe { border-color: var(--critical); box-shadow: inset 3px 0 0 var(--critical); }
+  .pen .dots { display: inline-flex; gap: 4px; }
+  .pen .dots b { width: 12px; height: 12px; border-radius: 50%; background: var(--off); box-shadow: inset 0 0 0 1px var(--grid); }
+  .pen .dots b.on { background: var(--critical); box-shadow: none; }
+  .pen .owe-badge { font-size: 12px; font-weight: 700; color: var(--critical); white-space: nowrap; }
   footer { color: var(--muted); font-size: 12px; margin-top: 20px; }
   #tip { position: fixed; pointer-events: none; z-index: 10; background: var(--ink); color: var(--surface); font-size: 12px; padding: 6px 8px; border-radius: 6px; max-width: 260px; opacity: 0; transition: opacity .1s; }
   table.data { border-collapse: collapse; font-size: 13px; width: 100%; margin-top: 8px; }
@@ -154,6 +161,11 @@
       <h2>Tick 30 ngày gần nhất <span class="hint">ô đỏ = bị tick (chưa trực)</span></h2>
       <div class="scroll" id="heat"></div>
     </div>
+  </section>
+
+  <section class="card" style="margin-top:16px">
+    <h2>🧋 Phạt trà sữa <span class="hint" id="penHint"></span></h2>
+    <div id="pen" class="pen"></div>
   </section>
 
   <footer id="foot">Dữ liệu lấy từ Google Sheet, cập nhật khoảng 30 phút/lần.</footer>
@@ -232,6 +244,17 @@ function render(d) {
   $("week").innerHTML = head + `<tbody>${body}</tbody>`;
 
   renderTicks();
+  renderPenalty();
+}
+
+function renderPenalty() {
+  const P = DATA.penalty; if (!P) return;
+  $("penHint").textContent = `đủ ${P.every} tick = bao trà sữa cả nhà · tính từ ${P.from}`;
+  const list = [...P.people].sort((a, b) => b.owed - a.owed || b.progress - a.progress || a.name.localeCompare(b.name, "vi"));
+  $("pen").innerHTML = list.map((p) => `<div class="p ${p.owed ? "owe" : ""}" data-tip="<b>${esc(p.name)}</b><br>${p.ticks} tick từ ${P.from} · đã bao ${p.paid} lần${p.owed ? `<br>🧋 Đang nợ ${p.owed} lần bao` : `<br>Còn ${P.every - p.progress} tick nữa là phải bao`}">
+      <span class="task-name">${esc(p.name)}</span>
+      ${p.owed ? `<span class="owe-badge">🧋 nợ ${p.owed}</span>` : `<span class="dots" aria-label="${p.progress}/${P.every} tick">${Array.from({ length: P.every }, (_, i) => `<b class="${i < p.progress ? "on" : ""}"></b>`).join("")}</span>`}
+    </div>`).join("") || `<div class="empty">Chưa có dữ liệu.</div>`;
 }
 
 function renderTicks() {
