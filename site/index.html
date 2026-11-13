@@ -11,7 +11,7 @@
     --page: #f9f9f7; --surface: #fcfcfb; --ink: #0b0b0b; --ink-2: #52514e; --muted: #898781;
     --grid: #e1e0d9; --axis: #c3c2b7; --ring: rgba(11,11,11,0.10);
     --series-1: #2a78d6;
-    --deferred: #6250d6; --good: #0ca30c; --good-text: #006300; --warning: #fab219; --serious: #ec835a; --critical: #d03b3b;
+    --deferred: #6250d6; --excused: #0f8c8c; --good: #0ca30c; --good-text: #006300; --warning: #fab219; --serious: #ec835a; --critical: #d03b3b;
     --off: #efeee9; --future: #ffffff;
     --radius: 12px;
   }
@@ -20,14 +20,14 @@
       color-scheme: dark;
       --page: #0d0d0d; --surface: #1a1a19; --ink: #f0efec; --ink-2: #c3c2b7; --muted: #898781;
       --grid: #2c2c2a; --axis: #383835; --ring: rgba(255,255,255,0.10);
-      --series-1: #3987e5; --good-text: #0ca30c; --off: #242422; --future: #1a1a19; --deferred: #9085e9;
+      --series-1: #3987e5; --good-text: #0ca30c; --off: #242422; --future: #1a1a19; --deferred: #9085e9; --excused: #3fb7b7;
     }
   }
   :root[data-theme="dark"] {
     color-scheme: dark;
     --page: #0d0d0d; --surface: #1a1a19; --ink: #f0efec; --ink-2: #c3c2b7; --muted: #898781;
     --grid: #2c2c2a; --axis: #383835; --ring: rgba(255,255,255,0.10);
-    --series-1: #3987e5; --good-text: #0ca30c; --off: #242422; --future: #1a1a19; --deferred: #9085e9;
+    --series-1: #3987e5; --good-text: #0ca30c; --off: #242422; --future: #1a1a19; --deferred: #9085e9; --excused: #3fb7b7;
   }
   * { box-sizing: border-box; }
   body { margin: 0; background: var(--page); color: var(--ink); font: 15px/1.45 system-ui, -apple-system, "Segoe UI", sans-serif; }
@@ -54,7 +54,7 @@
   .chip { display: inline-flex; align-items: center; gap: 4px; white-space: nowrap; font-size: 12px; font-weight: 600; padding: 2px 8px; border-radius: 999px; border: 1px solid var(--ring); color: var(--ink); }
   .chip i { font-style: normal; display: inline-grid; place-items: center; width: 16px; height: 16px; border-radius: 50%; color: #fff; font-size: 11px; }
   .chip.done i { background: var(--good); } .chip.pending i { background: var(--warning); color: #0b0b0b; }
-  .chip.missed i { background: var(--critical); } .chip.deferred i { background: var(--deferred); } .chip.late i { background: var(--serious); color: #0b0b0b; }
+  .chip.missed i { background: var(--critical); } .chip.deferred i { background: var(--deferred); } .chip.excused i { background: var(--excused); } .chip.late i { background: var(--serious); color: #0b0b0b; }
   /* Bảng tuần */
   .scroll { overflow-x: auto; }
   table.week { border-collapse: separate; border-spacing: 2px; width: 100%; min-width: 620px; }
@@ -73,6 +73,7 @@
   td.c.missed { background: var(--critical); color: #fff; }
   td.c.late { background: var(--serious); color: #0b0b0b; }
   td.c.deferred { background: var(--deferred); color: #fff; }
+  td.c.excused { background: var(--excused); color: #fff; }
   td.c .ic { display: block; font-size: 14px; line-height: 1; }
   td.c .nm { display: block; font-size: 10.5px; font-weight: 500; opacity: .95; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 70px; margin: 2px auto 0; }
   .legend { display: flex; flex-wrap: wrap; gap: 12px; margin-top: 10px; color: var(--ink-2); font-size: 12px; }
@@ -142,6 +143,7 @@
       <span><i class="sw" style="background:var(--serious)"></i>! Đã qua, không có V</span>
       <span><i class="sw" style="background:var(--critical)"></i>✗ Bị đánh X</span>
       <span><i class="sw" style="background:var(--deferred)"></i>🔁 Trực bù (dời sang CN)</span>
+      <span><i class="sw" style="background:var(--excused)"></i>🏡 Vắng nhà (miễn)</span>
       <span><i class="sw" style="box-shadow:inset 0 0 0 1px var(--grid);background:var(--future)"></i>Sắp tới</span>
       <span><i class="sw" style="background:var(--off)"></i>Không có lịch</span>
     </div>
@@ -178,7 +180,7 @@ const esc = (s) => String(s ?? "").replace(/[&<>"]/g, (c) => ({ "&": "&amp;", "<
 const STATUS = {
   done: { ic: "✓", t: "Đã trực" }, pending: { ic: "⏳", t: "Hôm nay, chưa báo" },
   late: { ic: "!", t: "Không có điểm danh (chưa V)" }, missed: { ic: "✗", t: "Bị đánh X (chưa trực)" },
-  deferred: { ic: "🔁", t: "Xin trực bù, dời sang Chủ nhật" }, future: { ic: "", t: "Sắp tới" }, off: { ic: "", t: "Không có lịch" },
+  deferred: { ic: "🔁", t: "Xin trực bù, dời sang Chủ nhật" }, excused: { ic: "🏡", t: "Vắng nhà, được miễn trực" }, future: { ic: "", t: "Sắp tới" }, off: { ic: "", t: "Không có lịch" },
 };
 
 // Theme toggle (lưu lựa chọn nếu trình duyệt cho phép)

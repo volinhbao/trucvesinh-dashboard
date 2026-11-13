@@ -135,6 +135,7 @@ export const thuName = (dow) => THU_SO[dow];
 // Ký hiệu ô Điểm danh: V = đã trực, X = chưa trực, B = xin trực bù (dời sang CN), BV = đã trực bù
 export const isDoneMark = (m) => m === "V" || m === "BV";
 export const isDeferredMark = (m) => m === "B";
+export const isExcusedMark = (m) => m === "M"; // miễn trực (vắng nhà)
 
 // Thứ (dow JS) của 1 ô điểm danh: việc thứ 2,4,6 lần 2 -> thứ 4; việc "Thứ 5" -> thứ 5
 export function cellDow(x, lan) {
@@ -161,7 +162,8 @@ export function buildBlocks(week, dow) {
   // Bọc tên người trong ⟦ ⟧ để bot thay bằng @tag khi gửi: "T.Nhân – Bảo" -> "⟦T.Nhân⟧ – ⟦Bảo⟧"
   const tag = (who) => who.split(/(\s*[–+,&]\s*|\s+-\s+)/).map((p, i) => (i % 2 || !p.trim() ? p : `⟦${p.trim()}⟧`)).join("");
   const line = (x) => `• ${x.task}: ${x.who ? tag(x.who) : "(chưa phân công)"}`;
-  const notDone = today.filter((x) => !isDoneMark(x.mark) && !isDeferredMark(x.mark));
+  const notDone = today.filter((x) => !isDoneMark(x.mark) && !isDeferredMark(x.mark) && !isExcusedMark(x.mark));
+  const excusedToday = today.filter((x) => isExcusedMark(x.mark));
   const deferredToday = today.filter((x) => isDeferredMark(x.mark));
   const pendingMakeups = makeupCells(week).filter((c) => c.mark === "B");
   let trucBu = "";
@@ -179,6 +181,6 @@ export function buildBlocks(week, dow) {
     so_viec_tuan_chua_xong: String(weeklyLeft.length),
     chua_diem_danh: notDone.map((x) => `${line(x)}${x.mark === "X" ? " ❌" : ""}`).join("\n") || "✅ Tất cả đã trực xong!",
     so_chua_diem_danh: String(notDone.length),
-    truc_bu: trucBu,
+    truc_bu: trucBu + (excusedToday.length ? (trucBu ? "\n\n" : "") + "🏡 Vắng nhà, được miễn hôm nay:\n" + excusedToday.map((x) => `• ${x.task}: ${tag(x.who)}`).join("\n") : ""),
   };
 }

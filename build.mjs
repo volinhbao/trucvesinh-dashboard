@@ -68,13 +68,13 @@ const gridRows = order.map((k) => {
       const t = tasksForDay({ tasks: list }, d.dow)[0];
       if (!t) return { s: "off" };
       const mark = t.mark;
-      const s = mark === "V" || mark === "BV" ? "done" : mark === "B" ? "deferred" : mark === "X" ? "missed" : d.isToday ? "pending" : d.isPast ? "late" : "future";
+      const s = mark === "V" || mark === "BV" ? "done" : mark === "B" ? "deferred" : mark === "M" ? "excused" : mark === "X" ? "missed" : d.isToday ? "pending" : d.isPast ? "late" : "future";
       return { s, who: people(t.who), lan: t.lan };
     }),
   };
 });
 
-const todayTasks = tasksForDay(week, dowToday).map((t) => ({ task: t.task, who: people(t.who), lan: t.lan, s: t.mark === "V" || t.mark === "BV" ? "done" : t.mark === "B" ? "deferred" : t.mark === "X" ? "missed" : "pending" }));
+const todayTasks = tasksForDay(week, dowToday).map((t) => ({ task: t.task, who: people(t.who), lan: t.lan, s: t.mark === "V" || t.mark === "BV" ? "done" : t.mark === "B" ? "deferred" : t.mark === "M" ? "excused" : t.mark === "X" ? "missed" : "pending" }));
 const weekly = weeklyTasks(week).map((x) => ({ task: x.task, who: people(x.who), need: weeklyNeed(x), count: weeklyCount(x), done: weeklyDone(x) }));
 
 // Tab Tick vệ sinh: hàng 1 = ngày, cột A = tên, ô TRUE = bị tick (chưa trực)
