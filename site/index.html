@@ -1,0 +1,273 @@
+<!doctype html>
+<html lang="vi">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Trực vệ sinh NSV · Dashboard</title>
+<meta name="robots" content="noindex">
+<style>
+  :root {
+    color-scheme: light;
+    --page: #f9f9f7; --surface: #fcfcfb; --ink: #0b0b0b; --ink-2: #52514e; --muted: #898781;
+    --grid: #e1e0d9; --axis: #c3c2b7; --ring: rgba(11,11,11,0.10);
+    --series-1: #2a78d6;
+    --deferred: #6250d6; --good: #0ca30c; --good-text: #006300; --warning: #fab219; --serious: #ec835a; --critical: #d03b3b;
+    --off: #efeee9; --future: #ffffff;
+    --radius: 12px;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root:where(:not([data-theme="light"])) {
+      color-scheme: dark;
+      --page: #0d0d0d; --surface: #1a1a19; --ink: #f0efec; --ink-2: #c3c2b7; --muted: #898781;
+      --grid: #2c2c2a; --axis: #383835; --ring: rgba(255,255,255,0.10);
+      --series-1: #3987e5; --good-text: #0ca30c; --off: #242422; --future: #1a1a19; --deferred: #9085e9;
+    }
+  }
+  :root[data-theme="dark"] {
+    color-scheme: dark;
+    --page: #0d0d0d; --surface: #1a1a19; --ink: #f0efec; --ink-2: #c3c2b7; --muted: #898781;
+    --grid: #2c2c2a; --axis: #383835; --ring: rgba(255,255,255,0.10);
+    --series-1: #3987e5; --good-text: #0ca30c; --off: #242422; --future: #1a1a19; --deferred: #9085e9;
+  }
+  * { box-sizing: border-box; }
+  body { margin: 0; background: var(--page); color: var(--ink); font: 15px/1.45 system-ui, -apple-system, "Segoe UI", sans-serif; }
+  .wrap { max-width: 1100px; margin: 0 auto; padding: 24px 16px 48px; }
+  header { display: flex; flex-wrap: wrap; gap: 8px 16px; align-items: baseline; justify-content: space-between; margin-bottom: 20px; }
+  h1 { font-size: 22px; margin: 0; }
+  .sub { color: var(--ink-2); font-size: 13px; }
+  .tools button { font: inherit; font-size: 13px; color: var(--ink-2); background: var(--surface); border: 1px solid var(--ring); border-radius: 8px; padding: 4px 10px; cursor: pointer; }
+  .kpis { display: grid; grid-template-columns: repeat(auto-fit, minmax(170px, 1fr)); gap: 12px; margin-bottom: 16px; }
+  .card { background: var(--surface); border: 1px solid var(--ring); border-radius: var(--radius); padding: 16px; }
+  .kpi .label { color: var(--ink-2); font-size: 13px; }
+  .kpi .value { font-size: 30px; font-weight: 650; margin-top: 2px; }
+  .kpi .value small { font-size: 16px; color: var(--muted); font-weight: 500; }
+  .kpi .note { color: var(--muted); font-size: 12px; margin-top: 2px; }
+  .row2 { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-bottom: 16px; }
+  @media (max-width: 760px) { .row2 { grid-template-columns: 1fr; } }
+  h2 { font-size: 15px; margin: 0 0 12px; }
+  h2 .hint { font-weight: 400; color: var(--muted); font-size: 12px; margin-left: 6px; }
+  ul.list { list-style: none; margin: 0; padding: 0; }
+  ul.list li { display: flex; justify-content: space-between; gap: 12px; padding: 8px 0; border-top: 1px solid var(--grid); }
+  ul.list li:first-child { border-top: 0; }
+  .task-name { font-weight: 550; }
+  .who { color: var(--ink-2); font-size: 13px; }
+  .chip { display: inline-flex; align-items: center; gap: 4px; white-space: nowrap; font-size: 12px; font-weight: 600; padding: 2px 8px; border-radius: 999px; border: 1px solid var(--ring); color: var(--ink); }
+  .chip i { font-style: normal; display: inline-grid; place-items: center; width: 16px; height: 16px; border-radius: 50%; color: #fff; font-size: 11px; }
+  .chip.done i { background: var(--good); } .chip.pending i { background: var(--warning); color: #0b0b0b; }
+  .chip.missed i { background: var(--critical); } .chip.deferred i { background: var(--deferred); } .chip.late i { background: var(--serious); color: #0b0b0b; }
+  /* Bảng tuần */
+  .scroll { overflow-x: auto; }
+  table.week { border-collapse: separate; border-spacing: 2px; width: 100%; min-width: 620px; }
+  table.week th { font-size: 12px; color: var(--ink-2); font-weight: 600; padding: 4px; text-align: center; }
+  table.week th.today { color: var(--ink); }
+  table.week th.today span { background: var(--ink); color: var(--surface); border-radius: 6px; padding: 1px 6px; }
+  table.week td.name { text-align: left; padding: 4px 8px 4px 0; white-space: nowrap; position: sticky; left: 0; background: var(--surface); z-index: 1; }
+  table.week thead th:first-child { position: sticky; left: 0; background: var(--surface); z-index: 1; }
+  table.week td.name .sched { color: var(--muted); font-size: 12px; margin-left: 4px; }
+  table.week td.name .who { display: block; }
+  table.week td.c { height: 40px; min-width: 62px; border-radius: 6px; text-align: center; font-size: 12px; font-weight: 600; position: relative; cursor: default; }
+  td.c.off { background: var(--off); }
+  td.c.future { background: var(--future); box-shadow: inset 0 0 0 1px var(--grid); color: var(--muted); }
+  td.c.done { background: var(--good); color: #fff; }
+  td.c.pending { background: var(--warning); color: #0b0b0b; }
+  td.c.missed { background: var(--critical); color: #fff; }
+  td.c.late { background: var(--serious); color: #0b0b0b; }
+  td.c.deferred { background: var(--deferred); color: #fff; }
+  td.c .ic { display: block; font-size: 14px; line-height: 1; }
+  td.c .nm { display: block; font-size: 10.5px; font-weight: 500; opacity: .95; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 70px; margin: 2px auto 0; }
+  .legend { display: flex; flex-wrap: wrap; gap: 12px; margin-top: 10px; color: var(--ink-2); font-size: 12px; }
+  .legend span { display: inline-flex; align-items: center; gap: 6px; }
+  .sw { width: 14px; height: 14px; border-radius: 4px; display: inline-block; }
+  /* Việc tuần */
+  .wk { padding: 8px 0; border-top: 1px solid var(--grid); }
+  .wk:first-child { border-top: 0; }
+  .wk .top { display: flex; justify-content: space-between; gap: 8px; }
+  .bar { height: 8px; background: var(--off); border-radius: 4px; margin-top: 6px; display: flex; gap: 2px; overflow: hidden; }
+  .bar b { flex: 1; background: var(--off); border-radius: 4px; }
+  .bar b.on { background: var(--good); }
+  /* Tick */
+  .seg { display: inline-flex; border: 1px solid var(--ring); border-radius: 8px; overflow: hidden; margin-left: 8px; vertical-align: middle; }
+  .seg button { font: inherit; font-size: 12px; border: 0; background: transparent; color: var(--ink-2); padding: 2px 10px; cursor: pointer; }
+  .seg button[aria-pressed="true"] { background: var(--ink); color: var(--surface); }
+  .hbar { display: grid; grid-template-columns: 90px 1fr 34px; align-items: center; gap: 8px; padding: 4px 0; }
+  .hbar .n { color: var(--ink-2); font-size: 13px; text-align: right; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .hbar .track { height: 18px; position: relative; border-left: 1px solid var(--axis); }
+  .hbar .fill { height: 100%; background: var(--series-1); border-radius: 0 4px 4px 0; min-width: 0; }
+  .hbar .v { font-size: 13px; font-variant-numeric: tabular-nums; color: var(--ink); }
+  .hbar:hover .fill { filter: brightness(1.1); }
+  table.heat { border-collapse: separate; border-spacing: 2px; }
+  table.heat td { width: 16px; height: 16px; border-radius: 3px; background: var(--off); padding: 0; }
+  table.heat td.t { background: var(--critical); }
+  table.heat th { font-size: 11px; font-weight: 500; color: var(--ink-2); text-align: right; padding-right: 6px; white-space: nowrap; }
+  table.heat thead th { padding: 0 0 4px; height: 16px; position: relative; width: 16px; }
+  table.heat thead th span { position: absolute; left: 0; bottom: 4px; font-size: 10px; color: var(--muted); font-weight: 400; white-space: nowrap; }
+  .empty { color: var(--muted); font-size: 13px; }
+  footer { color: var(--muted); font-size: 12px; margin-top: 20px; }
+  #tip { position: fixed; pointer-events: none; z-index: 10; background: var(--ink); color: var(--surface); font-size: 12px; padding: 6px 8px; border-radius: 6px; max-width: 260px; opacity: 0; transition: opacity .1s; }
+  table.data { border-collapse: collapse; font-size: 13px; width: 100%; margin-top: 8px; }
+  table.data th, table.data td { border-bottom: 1px solid var(--grid); padding: 4px 6px; text-align: left; }
+  table.data td.num { text-align: right; font-variant-numeric: tabular-nums; }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header>
+    <div>
+      <h1>🧹 Trực vệ sinh NSV</h1>
+      <div class="sub" id="sub">Đang tải…</div>
+    </div>
+    <div class="tools"><button id="theme" type="button">🌗 Giao diện</button></div>
+  </header>
+
+  <section class="kpis" id="kpis"></section>
+
+  <section class="row2">
+    <div class="card"><h2>Hôm nay <span class="hint" id="todayLabel"></span></h2><ul class="list" id="today"></ul></div>
+    <div class="card"><h2>Việc tuần <span class="hint">hạn Chủ nhật</span></h2><div id="weekly"></div></div>
+  </section>
+
+  <section class="card" style="margin-bottom:16px">
+    <h2>Tuần này <span class="hint" id="weekTitle"></span></h2>
+    <div class="scroll"><table class="week" id="week"></table></div>
+    <div class="legend">
+      <span><i class="sw" style="background:var(--good)"></i>✓ Đã trực</span>
+      <span><i class="sw" style="background:var(--warning)"></i>⏳ Hôm nay, chưa báo</span>
+      <span><i class="sw" style="background:var(--serious)"></i>! Đã qua, không có V</span>
+      <span><i class="sw" style="background:var(--critical)"></i>✗ Bị đánh X</span>
+      <span><i class="sw" style="background:var(--deferred)"></i>🔁 Trực bù (dời sang CN)</span>
+      <span><i class="sw" style="box-shadow:inset 0 0 0 1px var(--grid);background:var(--future)"></i>Sắp tới</span>
+      <span><i class="sw" style="background:var(--off)"></i>Không có lịch</span>
+    </div>
+  </section>
+
+  <section class="row2">
+    <div class="card">
+      <h2>Số lần bị tick
+        <span class="seg" role="group" aria-label="Khoảng thời gian">
+          <button type="button" data-r="month" aria-pressed="true">Tháng này</button><button type="button" data-r="total" aria-pressed="false">Tất cả</button>
+        </span>
+      </h2>
+      <div id="bars"></div>
+      <details style="margin-top:8px"><summary class="sub" style="cursor:pointer">Xem dạng bảng</summary><table class="data" id="tickTable"></table></details>
+    </div>
+    <div class="card">
+      <h2>Tick 30 ngày gần nhất <span class="hint">ô đỏ = bị tick (chưa trực)</span></h2>
+      <div class="scroll" id="heat"></div>
+    </div>
+  </section>
+
+  <footer id="foot">Dữ liệu lấy từ Google Sheet, cập nhật khoảng 30 phút/lần.</footer>
+</div>
+<div id="tip" role="tooltip"></div>
+
+<script>
+const $ = (id) => document.getElementById(id);
+const esc = (s) => String(s ?? "").replace(/[&<>"]/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[c]));
+const STATUS = {
+  done: { ic: "✓", t: "Đã trực" }, pending: { ic: "⏳", t: "Hôm nay, chưa báo" },
+  late: { ic: "!", t: "Không có điểm danh (chưa V)" }, missed: { ic: "✗", t: "Bị đánh X (chưa trực)" },
+  deferred: { ic: "🔁", t: "Xin trực bù, dời sang Chủ nhật" }, future: { ic: "", t: "Sắp tới" }, off: { ic: "", t: "Không có lịch" },
+};
+
+// Theme toggle (lưu lựa chọn nếu trình duyệt cho phép)
+(function () {
+  let saved = null; try { saved = localStorage.getItem("theme"); } catch {}
+  if (saved) document.documentElement.dataset.theme = saved;
+  $("theme").onclick = () => {
+    const cur = document.documentElement.dataset.theme || (matchMedia("(prefers-color-scheme: dark)").matches ? "dark" : "light");
+    const next = cur === "dark" ? "light" : "dark";
+    document.documentElement.dataset.theme = next;
+    try { localStorage.setItem("theme", next); } catch {}
+  };
+})();
+
+// Tooltip
+const tip = $("tip");
+document.addEventListener("mousemove", (e) => {
+  const el = e.target.closest("[data-tip]");
+  if (!el) { tip.style.opacity = 0; return; }
+  tip.innerHTML = el.dataset.tip;
+  const x = Math.min(e.clientX + 12, innerWidth - tip.offsetWidth - 8);
+  tip.style.left = x + "px"; tip.style.top = (e.clientY + 14) + "px"; tip.style.opacity = 1;
+});
+
+let DATA, range = "month";
+
+function render(d) {
+  DATA = d;
+  const gen = new Date(d.generatedAt);
+  $("sub").textContent = `${d.today.label}, ${d.today.key} · cập nhật lúc ${gen.toLocaleTimeString("vi-VN", { hour: "2-digit", minute: "2-digit", timeZone: "Asia/Ho_Chi_Minh" })}`;
+  $("todayLabel").textContent = `${d.today.label} ${d.today.key}`;
+  $("weekTitle").textContent = d.weekTitle;
+
+  const k = d.kpi;
+  const pct = k.weekTotal ? Math.round((k.weekDone / k.weekTotal) * 100) : 0;
+  $("kpis").innerHTML = [
+    ["Hôm nay đã trực", `${k.todayDone}<small> / ${k.todayTotal}</small>`, k.todayTotal - k.todayDone ? `còn ${k.todayTotal - k.todayDone} việc chưa báo` : "xong hết 🎉"],
+    ["Tuần này (tới hôm nay)", `${pct}<small>%</small>`, `${k.weekDone}/${k.weekTotal} lượt đã có V`],
+    ["Việc tuần xong", `${k.weeklyDone}<small> / ${k.weeklyTotal}</small>`, "Sân thượng, sân phơi, quét lá, sân trước"],
+    ["Tick tháng này", `${k.monthTicks}`, `tháng ${d.ticks.month}`],
+  ].map(([l, v, n]) => `<div class="card kpi"><div class="label">${l}</div><div class="value">${v}</div><div class="note">${n}</div></div>`).join("");
+
+  $("today").innerHTML = d.todayTasks.length ? d.todayTasks.map((t) =>
+    `<li><div><div class="task-name">${esc(t.task)}</div><div class="who">${esc(t.who.join(" – "))}</div></div>
+     <span class="chip ${t.s}"><i>${STATUS[t.s].ic}</i>${STATUS[t.s].t}</span></li>`).join("")
+    : `<li class="empty">Hôm nay không có lịch trực.</li>`;
+
+  $("weekly").innerHTML = d.weekly.map((w) =>
+    `<div class="wk" data-tip="${esc(w.task)}: ${w.count}/${w.need} lần">
+      <div class="top"><div><span class="task-name">${esc(w.task)}</span> <span class="who">· ${esc(w.who.join(" – "))}</span></div>
+      <span class="chip ${w.done ? "done" : "pending"}"><i>${w.done ? "✓" : "⏳"}</i>${w.done ? "Xong" : `${w.count}/${w.need}`}</span></div>
+      <div class="bar">${Array.from({ length: w.need }, (_, i) => `<b class="${i < w.count ? "on" : ""}"></b>`).join("")}</div>
+    </div>`).join("") || `<div class="empty">Không có việc tuần.</div>`;
+
+  const head = `<thead><tr><th></th>${d.days.map((x) => `<th class="${x.isToday ? "today" : ""}"><span>${x.short}</span><div style="font-weight:400;color:var(--muted)">${x.key.slice(0, 5)}</div></th>`).join("")}</tr></thead>`;
+  const body = d.grid.map((r) => `<tr><td class="name"><span class="task-name">${esc(r.task.split(",")[0])}</span><span class="sched">${esc(r.sched)}</span>${r.who.length ? `<span class="who">${esc(r.who.join(" – "))}</span>` : ""}</td>${
+    r.cells.map((c, i) => {
+      const st = STATUS[c.s]; const day = d.days[i];
+      const who = c.who ? c.who.join(" – ") : "";
+      const tipTxt = `<b>${esc(r.task.split(",")[0])}</b><br>${day.label} ${day.key}<br>${st.t}${who ? "<br>👤 " + esc(who) : ""}${c.lan ? " · lần " + c.lan : ""}`;
+      return `<td class="c ${c.s}" data-tip="${esc(tipTxt)}" aria-label="${esc(day.label + ": " + st.t + (who ? ", " + who : ""))}">${st.ic ? `<span class="ic">${st.ic}</span>` : ""}${c.s !== "off" && !r.who.length && who ? `<span class="nm">${esc(who)}</span>` : ""}</td>`;
+    }).join("")}</tr>`).join("");
+  $("week").innerHTML = head + `<tbody>${body}</tbody>`;
+
+  renderTicks();
+}
+
+function renderTicks() {
+  const t = DATA.ticks;
+  const list = [...t.monthCounts].sort((a, b) => b[range] - a[range] || a.name.localeCompare(b.name, "vi"));
+  const max = Math.max(1, ...list.map((x) => x[range]));
+  const noneYet = range === "month" && list.every((x) => x.month === 0);
+  $("bars").innerHTML = noneYet ? `<div class="empty">🎉 Tháng ${t.month} chưa ai bị tick. Bấm "Tất cả" để xem từ trước tới nay.</div>` : list.length ? list.map((x) =>
+    `<div class="hbar" data-tip="<b>${esc(x.name)}</b><br>${range === "month" ? "Tháng " + t.month : "Từ trước tới nay"}: ${x[range]} lần bị tick">
+      <div class="n">${esc(x.name)}</div><div class="track"><div class="fill" style="width:${(x[range] / max) * 100}%"></div></div><div class="v">${x[range]}</div></div>`).join("")
+    : `<div class="empty">Chưa có dữ liệu tick.</div>`;
+  $("tickTable").innerHTML = `<thead><tr><th>Người</th><th class="num">Tháng ${t.month}</th><th class="num">Tất cả</th></tr></thead><tbody>${
+    t.monthCounts.map((x) => `<tr><td>${esc(x.name)}</td><td class="num">${x.month}</td><td class="num">${x.total}</td></tr>`).join("")}</tbody>`;
+
+  const r = t.recent;
+  $("heat").innerHTML = r.dates.length ? `<table class="heat"><thead><tr><th></th>${r.dates.map((dt, i) => `<th>${i % 7 === 0 ? `<span>${dt.slice(0, 5)}</span>` : ""}</th>`).join("")}</tr></thead><tbody>${
+    r.rows.map((row) => `<tr><th>${esc(row.name)}</th>${row.cells.map((v, i) => `<td class="${v ? "t" : ""}" data-tip="<b>${esc(row.name)}</b> · ${r.dates[i]}<br>${v ? "✗ Bị tick (chưa trực)" : "Không bị tick"}"></td>`).join("")}</tr>`).join("")
+  }</tbody></table>` : `<div class="empty">Chưa có dữ liệu.</div>`;
+}
+
+document.querySelectorAll(".seg button").forEach((b) => b.onclick = () => {
+  range = b.dataset.r;
+  document.querySelectorAll(".seg button").forEach((x) => x.setAttribute("aria-pressed", String(x === b)));
+  renderTicks();
+});
+
+async function load() {
+  try {
+    const res = await fetch("data.json?t=" + Date.now(), { cache: "no-store" });
+    render(await res.json());
+  } catch (e) {
+    $("sub").textContent = "Không tải được dữ liệu: " + e.message;
+  }
+}
+load();
+setInterval(load, 5 * 60 * 1000);
+</script>
+</body>
+</html>
