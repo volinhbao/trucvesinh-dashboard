@@ -9,7 +9,7 @@ import { fetchCsvText, normDate } from "./src/sheet.js";
 const env = process.env;
 const LICH_GID = env.LICH_GID || "1007624391";
 const TICK_GID = env.TICK_GID || "1051999456";
-const PENALTY_FROM = env.PENALTY_FROM || "14/11/2026";
+const PENALTY_FROM = env.PENALTY_FROM || "09/11/2026";
 const PENALTY_EVERY = 3;
 
 const lichCsv = env.LICH_CSV ? fs.readFileSync(env.LICH_CSV, "utf8") : await fetchCsvText(env.SHEET_ID, LICH_GID);
