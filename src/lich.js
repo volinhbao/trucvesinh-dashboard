@@ -14,6 +14,13 @@ export function parseGrid(csvText) {
 
 const cell = (r, i) => String(r?.[i] ?? "").trim();
 const shortName = (s) => s.split("\n")[0].split("(")[0].trim();   // "Trực bếp ( lau chùi..." -> "Trực bếp"
+// Tên hiển thị đầy đủ: thêm việc thứ 2 nằm trong ngoặc, vd "Phòng bếp\n(Quét lau phòng bếp, NVS L1)" -> "Phòng bếp + NVS L1"
+const fullName = (s) => {
+  const base = shortName(s);
+  if (/\+|nhà vệ sinh|nvs/i.test(base)) return base;
+  const extra = (String(s).match(/\b(NVS\s*[\wÀ-ỹ]*\d*|Nhà vệ sinh\s*\d+)/i) || [])[1];
+  return extra ? `${base} + ${extra.trim()}` : base;
+};
 const cleanName = (s) => s.replace(/\s*[–-]\s*/g, " – ").replace(/\s+/g, " ").trim();
 
 // Ngày trong tuần (JS: 0=CN..6=T7) -> số "thứ" kiểu VN (2..7, CN=8)
@@ -44,7 +51,7 @@ function readBlock(grid, start) {
     if (taskCell) lastTask = taskCell;           // dòng không có nội dung = nối tiếp việc phía trên (vd đổ rác Thứ 3, 4...)
     tasks.push({
       row: i + 1,
-      task: shortName(lastTask),
+      task: fullName(lastTask),
       detail: lastTask,
       freq: parseFreq(freqCell),
       who: cleanName(cell(r, COL.who)),

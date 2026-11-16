@@ -236,11 +236,11 @@ function render(d) {
     </div>`).join("") || `<div class="empty">Không có việc tuần.</div>`;
 
   const head = `<thead><tr><th></th>${d.days.map((x) => `<th class="${x.isToday ? "today" : ""}"><span>${x.short}</span><div style="font-weight:400;color:var(--muted)">${x.key.slice(0, 5)}</div></th>`).join("")}</tr></thead>`;
-  const body = d.grid.map((r) => `<tr><td class="name"><span class="task-name">${esc(r.task.split(",")[0])}</span><span class="sched">${esc(r.sched)}</span>${r.who.length ? `<span class="who">${esc(r.who.join(" – "))}</span>` : ""}</td>${
+  const body = d.grid.map((r) => `<tr><td class="name"><span class="task-name">${esc(r.task)}</span><span class="sched">${esc(r.sched)}</span>${r.who.length ? `<span class="who">${esc(r.who.join(" – "))}</span>` : ""}</td>${
     r.cells.map((c, i) => {
       const st = STATUS[c.s]; const day = d.days[i];
       const who = c.who ? c.who.join(" – ") : "";
-      const tipTxt = `<b>${esc(r.task.split(",")[0])}</b><br>${day.label} ${day.key}<br>${st.t}${who ? "<br>👤 " + esc(who) : ""}${c.lan ? " · lần " + c.lan : ""}`;
+      const tipTxt = `<b>${esc(r.task)}</b><br>${day.label} ${day.key}<br>${st.t}${who ? "<br>👤 " + esc(who) : ""}${c.lan ? " · lần " + c.lan : ""}`;
       return `<td class="c ${c.s}" data-tip="${esc(tipTxt)}" aria-label="${esc(day.label + ": " + st.t + (who ? ", " + who : ""))}">${st.ic ? `<span class="ic">${st.ic}</span>` : ""}${c.s !== "off" && !r.who.length && who ? `<span class="nm">${esc(who)}</span>` : ""}</td>`;
     }).join("")}</tr>`).join("");
   $("week").innerHTML = head + `<tbody>${body}</tbody>`;
